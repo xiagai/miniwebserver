@@ -32,13 +32,16 @@ public:
 	inline bool operator>=(TimeStamp rhs) {
 		return !(*this < rhs);
 	}
+	bool isValid();
 
 	static TimeStamp now();
 	static TimeStamp invalid();
 	static TimeStamp addTime(TimeStamp, double);
 
-private:
+public:
 	const static int kMicroSecPerSec = 1000 * 1000;
+
+private:
 	int64_t m_mircoseconds;
 };
 

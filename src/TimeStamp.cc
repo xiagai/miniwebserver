@@ -22,6 +22,10 @@ int64_t TimeStamp::getMicroSeconds() {
 	return m_mircoseconds;
 }
 
+bool TimeStamp::isValid() {
+	return m_mircoseconds > 0;
+}
+
 TimeStamp TimeStamp::now() {
 	struct timeval tv;
 	gettimeofday(&tv, nullptr);
