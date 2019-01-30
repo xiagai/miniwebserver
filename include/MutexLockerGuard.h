@@ -13,7 +13,8 @@
 namespace miniws {
 
 class MutexLockerGuard : noncopyable {
-	explicit MutexLockerGuard(MutexLocker locker)
+public:
+	explicit MutexLockerGuard(MutexLocker &locker)
 	: m_locker(locker) {
 		m_locker.lock();
 	}
@@ -22,7 +23,7 @@ class MutexLockerGuard : noncopyable {
 	}
 
 private:
-	MutexLocker& m_locker;
+	MutexLocker &m_locker;
 };
 
 }
