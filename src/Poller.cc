@@ -63,6 +63,24 @@ void Poller::updateChannel(Channel *channel) {
 	}
 }
 
+void Poller::removeChannel(Channel *channel) {
+	assertInLoopThread();
+	if (channel->index() < 0) {
+		// a new channel, don't need to remove
+	} else {
+		// remove existing channel
+		assert(m_channels.find(channel->fd()) != m_channels.end());
+		assert(m_channels[channel->fd()] == channel);
+		int idx = channel->index();
+		assert(0 <= idx && idx < static_cast<int>(m_pollfds.size()));
+		pollfd &pfd = m_pollfds[idx];
+		assert(pfd.fd == channel->fd() || pfd.fd == -1);
+		size_t n = m_channels.erase(pfd.fd);
+		assert(n == 1);
+		m_pollfds.erase(m_pollfds.begin() + idx);
+	}
+}
+
 void Poller::assertInLoopThread() {
 	m_ownerLoop->assertInLoopThread();
 }

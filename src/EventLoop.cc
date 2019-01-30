@@ -40,6 +40,7 @@ int createEventFd() {
 EventLoop::EventLoop()
 	: m_looping(false),
 	  m_quit(false),
+	  m_eventHandling(false),
 	  m_callingPendingFunctors(false),
 	  m_threadId(CurrentThread::tid()),
 	  m_poller(std::make_unique<Poller>(this)),
@@ -69,10 +70,13 @@ void EventLoop::loop() {
 	while (!m_quit) {
 		m_activeChannels.clear();
 		m_poller->poll(kPollTimeMs, m_activeChannels);
+		m_eventHandling = true;
 		for (std::vector<Channel *>::iterator it = m_activeChannels.begin();
 				it != m_activeChannels.end(); ++it) {
-			(*it)->handleEvent();
+			m_currentChannel = (*it);
+			m_currentChannel->handleEvent();
 		}
+		m_eventHandling = false;
 		doPendingFunctors();
 	}
 	printf("LOG_TRACE EventLoop %p stop looping", this);
@@ -96,11 +100,16 @@ void EventLoop::updateChannel(Channel *channel) {
 	m_poller->updateChannel(channel);
 }
 
-// void EventLoop::removeChannel(Channel *channel) {
-// 	assert(channel->ownerLoop() == this);
-// 	assertInLoopThread();
-	
-// }
+void EventLoop::removeChannel(Channel *channel) {
+	assert(channel->ownerLoop() == this);
+	assertInLoopThread();
+	//???
+	if (m_eventHandling) {
+		assert(m_currentChannel == channel ||
+			std::find(m_activeChannels.begin(), m_activeChannels.end(), channel) != m_activeChannels.end());
+	}
+	m_poller->removeChannel(channel);
+}
 
 void EventLoop::runInLoop(const Functor &cb) {
 	if (isInLoopThread()) {

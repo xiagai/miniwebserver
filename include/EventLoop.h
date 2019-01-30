@@ -30,8 +30,10 @@ public:
 	void quit();
 	void assertInLoopThread();
 	bool isInLoopThread() const;
+	// Must be called in the loop thread
 	void updateChannel(Channel* channel);
-	//void removeChannel(Channel* channel);
+	// Must be called in the loop thread
+	void removeChannel(Channel* channel);
 	void runInLoop(const Functor &cb);
 	static EventLoop *getEventLoopOfCurrentThread();
 
@@ -44,10 +46,14 @@ private:
 private:
 	bool m_looping;
 	bool m_quit;
-	bool m_callingPendingFunctors;
 	const pid_t m_threadId;
 	std::unique_ptr<Poller> m_poller;
 	std::vector<Channel *> m_activeChannels;
+
+	bool m_eventHandling;
+	Channel *m_currentChannel;
+
+	bool m_callingPendingFunctors;
 	int m_wakeupFd;
 	std::unique_ptr<Channel> m_wakeupChannel;
 	MutexLocker m_mutex;
