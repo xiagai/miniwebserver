@@ -86,8 +86,13 @@ void Channel::setIndex(int idx) {
 EventLoop *Channel::ownerLoop() {
 	return m_ownerLoop;
 }
+
 void Channel::update() {
 	m_ownerLoop->updateChannel(this);
+}
+
+void Channel::remove() {
+	m_ownerLoop->removeChannel(this);
 }
 
 

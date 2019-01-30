@@ -37,6 +37,7 @@ public:
 	void enableWriting();
 	void disableWriting();
 	void disableAll();
+	void remove();
 
 	// for Poller
 	int index();
