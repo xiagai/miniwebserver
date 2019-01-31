@@ -8,14 +8,16 @@
 #pragma once
 
 #include "noncopyable.h"
-#include "EventLoop.h"
 #include "Channel.h"
 #include "TimeStamp.h"
 #include "Timer.h"
 
 #include <map>
+#include <memory>
 
 namespace miniws {
+
+class EventLoop;
 
 class TimerQueue : noncopyable {
 public:
