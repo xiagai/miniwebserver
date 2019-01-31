@@ -5,15 +5,18 @@
  *      Author: xiagai
  */
 
-#ifndef EVENTLOOP_H_
-#define EVENTLOOP_H_
+#pragma once
 
 #include "noncopyable.h"
 #include "pthread.h"
 #include "MutexLocker.h"
+#include "TimerQueue.h"
+#include "TimeStamp.h"
+#include "Timer.h"
 
 #include <memory>
 #include <vector>
+#include <functional>
 
 namespace miniws {
 
@@ -36,6 +39,9 @@ public:
 	void removeChannel(Channel* channel);
 	void runInLoop(const Functor &cb);
 	static EventLoop *getEventLoopOfCurrentThread();
+	void runAt(const TimeStamp &timestamp, const Timer::TimerCallback &cb);
+	void runAfter(double delay, const Timer::TimerCallback &cb);
+	void runEvery(double interval, const Timer::TimerCallback &cb);
 
 private:
 	void handleWakeUp();
@@ -48,13 +54,14 @@ private:
 	bool m_quit;
 	const pid_t m_threadId;
 	std::unique_ptr<Poller> m_poller;
+	std::unique_ptr<TimerQueue> m_timerQueue;
 	std::vector<Channel *> m_activeChannels;
 
 	bool m_eventHandling;
 	Channel *m_currentChannel;
 
 	bool m_callingPendingFunctors;
-	int m_wakeupFd;
+	int m_wakeupfd;
 	std::unique_ptr<Channel> m_wakeupChannel;
 	MutexLocker m_mutex;
 	std::vector<Functor> m_pendingFunctors;
@@ -62,6 +69,3 @@ private:
 
 }
 
-
-
-#endif /* EVENTLOOP_H_ */

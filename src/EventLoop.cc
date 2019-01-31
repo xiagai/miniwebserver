@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <iostream>
 #include <sys/eventfd.h>
+#include <algorithm>
 
 namespace miniws {
 
@@ -40,12 +41,14 @@ int createEventFd() {
 EventLoop::EventLoop()
 	: m_looping(false),
 	  m_quit(false),
-	  m_eventHandling(false),
-	  m_callingPendingFunctors(false),
 	  m_threadId(CurrentThread::tid()),
 	  m_poller(std::make_unique<Poller>(this)),
-	  m_wakeupFd(detail::createEventFd()),
-	  m_wakeupChannel(std::make_unique<Channel>(this, m_wakeupFd)),
+	  m_timerQueue(std::make_unique<TimerQueue>(this)),
+	  m_eventHandling(false),
+	  m_currentChannel(nullptr),
+	  m_callingPendingFunctors(false),
+	  m_wakeupfd(detail::createEventFd()),
+	  m_wakeupChannel(std::make_unique<Channel>(this, m_wakeupfd)),
 	  m_mutex() {
 	printf("EventLoop created %p in thread %d\n", this, m_threadId);
 	if (t_loopInThisThread) {
@@ -54,10 +57,15 @@ EventLoop::EventLoop()
 	else {
 		t_loopInThisThread = this;
 	}
+	m_wakeupChannel->setReadCallback(std::bind(&EventLoop::handleWakeUp, this));
+	m_wakeupChannel->enableReading();
 }
 
 EventLoop::~EventLoop() {
 	assert(!m_looping);
+	m_wakeupChannel->disableAll();
+	m_wakeupChannel->remove();
+	close(m_wakeupfd);
 	t_loopInThisThread = nullptr;
 }
 
@@ -79,13 +87,13 @@ void EventLoop::loop() {
 		m_eventHandling = false;
 		doPendingFunctors();
 	}
-	printf("LOG_TRACE EventLoop %p stop looping", this);
+	printf("LOG_TRACE EventLoop %p stop looping\n", this);
 	m_looping = false;
 }
 
 void EventLoop::quit() {
 	m_quit = true;
-	if (!isInLoopThread) {
+	if (!isInLoopThread()) {
 		wakeup();
 	}
 }
@@ -105,8 +113,7 @@ void EventLoop::removeChannel(Channel *channel) {
 	assertInLoopThread();
 	//???
 	if (m_eventHandling) {
-		assert(m_currentChannel == channel ||
-			std::find(m_activeChannels.begin(), m_activeChannels.end(), channel) != m_activeChannels.end());
+		assert(m_currentChannel == channel || std::find(m_activeChannels.begin(), m_activeChannels.end(), channel) != m_activeChannels.end());
 	}
 	m_poller->removeChannel(channel);
 }
@@ -122,17 +129,17 @@ void EventLoop::runInLoop(const Functor &cb) {
 
 void EventLoop::wakeup() {
 	uint64_t one = 1;
-	ssize_t n = write(m_wakeupFd, &one, sizeof(one));
+	ssize_t n = write(m_wakeupfd, &one, sizeof(one));
 	if (n != sizeof(one)) {
-		printf("LOG_ERROR EventLoop::wakeup() writes %d bytes instead of 8", n);
+		printf("LOG_ERROR EventLoop::wakeup() writes %ld bytes instead of 8\n", n);
 	}
 }
 
 void EventLoop::handleWakeUp() {
 	uint64_t ret;
-	ssize_t n = read(m_wakeupFd, &ret, sizeof(ret));
+	ssize_t n = read(m_wakeupfd, &ret, sizeof(ret));
 	if (n != sizeof(ret)) {
-		printf("LOG_ERROR EventLoop::handleWakeUp() reads %d bytes instead of 8", n);
+		printf("LOG_ERROR EventLoop::handleWakeUp() reads %ld bytes instead of 8\n", n);
 	}
 }
 
@@ -142,6 +149,20 @@ void EventLoop::assertInLoopThread() {
 
 EventLoop *EventLoop::getEventLoopOfCurrentThread() {
 	return t_loopInThisThread;
+}
+
+void EventLoop::runAt(const TimeStamp &timestamp, const Timer::TimerCallback &cb) {
+	m_timerQueue->addTimer(cb, timestamp, 0.0);
+}
+
+void EventLoop::runAfter(double delay, const Timer::TimerCallback &cb) {
+	TimeStamp timestamp = TimeStamp::addTime(TimeStamp::now(), delay);
+	runAt(timestamp, cb);
+}
+
+void EventLoop::runEvery(double interval, const Timer::TimerCallback &cb) {
+	TimeStamp timestamp = TimeStamp::addTime(TimeStamp::now(), interval);
+	m_timerQueue->addTimer(cb, timestamp, interval);
 }
 
 void EventLoop::doPendingFunctors() {
