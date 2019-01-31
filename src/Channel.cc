@@ -21,7 +21,7 @@ Channel::Channel(EventLoop *loop, int fd)
 }
 void Channel::handleEvent() {
 	if (m_revents & POLLNVAL) {
-		printf("LOG_WARN Channel::handleEvent() POLLNVAL");
+		printf("LOG_WARN Channel::handleEvent() POLLNVAL\n");
 	}
 	if (m_revents & (POLLERR | POLLNVAL)) {
 		if (m_errorCallback) {
