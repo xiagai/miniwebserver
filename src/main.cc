@@ -71,20 +71,41 @@
 // 	::close(timerfd);
 // }
 
-void f1() {
-    printf("f1\n");
-}
+// void f1() {
+//     printf("f1\n");
+// }
 
-void test4() {
-    miniws::EventLoop loop;
+// void test4() {
+//     miniws::EventLoop loop;
     
-    loop.runAfter(60, f1);
-    //loop.loop();
+//     loop.runAfter(60, f1);
+//     //loop.loop();
+// }
+void f5() {
+    printf("f5\n");
 }
 
+miniws::EventLoop *thread_loop = nullptr;
+void threadFunc5() {
+	printf("threadFunc(): pid = %d, tid = %d\n", getpid(), miniws::CurrentThread::tid());
+    miniws::EventLoop loop;
+    thread_loop = &loop;
+    loop.loop();
+	printf("tf2 end\n");
+}
+void test5() {
+	printf("main(): pid = %d, tid = %d\n", getpid(), miniws::CurrentThread::tid());
+    miniws::Thread thread(threadFunc5);
+    thread.start();
+    while (thread_loop == nullptr) {
+    }
+    thread_loop->runEvery(3, f5);
+    while (1) {}
+}
+	
 
 int main() {
-    test4();
+    test5();
 }
 
 
