@@ -18,7 +18,7 @@ TimeStamp::TimeStamp(int64_t microseconds) {
 	m_mircoseconds = microseconds;
 }
 
-int64_t TimeStamp::getMicroSeconds() {
+int64_t TimeStamp::getMicroSeconds() const {
 	return m_mircoseconds;
 }
 

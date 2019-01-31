@@ -16,20 +16,20 @@ class TimeStamp {
 public:
 	TimeStamp();
 	explicit TimeStamp(int64_t microseconds);
-	int64_t getMicroSeconds();
-	inline bool operator<(TimeStamp rhs) {
+	int64_t getMicroSeconds() const;
+	inline bool operator<(const TimeStamp &rhs) const {
 		return this->getMicroSeconds() < rhs.getMicroSeconds();
 	}
-	inline bool operator==(TimeStamp rhs) {
+	inline bool operator==(const TimeStamp &rhs) const {
 		return this->getMicroSeconds() == rhs.getMicroSeconds();
 	}
-	inline bool operator>(TimeStamp rhs) {
+	inline bool operator>(const TimeStamp &rhs) const {
 		return this->getMicroSeconds() > rhs.getMicroSeconds();
 	}
-	inline bool operator<=(TimeStamp rhs) {
+	inline bool operator<=(const TimeStamp &rhs) const {
 		return !(*this > rhs);
 	}
-	inline bool operator>=(TimeStamp rhs) {
+	inline bool operator>=(const TimeStamp &rhs) const {
 		return !(*this < rhs);
 	}
 	bool isValid();
