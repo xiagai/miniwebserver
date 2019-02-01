@@ -14,7 +14,7 @@ namespace miniws {
 
 class Condition : noncopyable {
 public:
-	explicit Condition(MutexLocker locker)
+	explicit Condition(MutexLocker &locker)
 	: m_locker(locker) {
 		pthread_cond_init(&m_cond, NULL);
 	}
