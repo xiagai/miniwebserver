@@ -31,8 +31,8 @@ timespec howMuchTimeFromNow(TimeStamp when) {
 void resetTimerfd(int timerfd, TimeStamp expiration) {
     itimerspec newValue;
     itimerspec oldValue;
-    //memset(&newValue, sizeof(newValue), 0);
-    //memset(&oldValue, sizeof(oldValue), 0);
+    //memset(&newValue, 0, sizeof(newValue));
+    //memset(&oldValue, 0, izeof(oldValue));
     newValue.it_interval.tv_nsec = 0;
     newValue.it_interval.tv_sec = 0;
     newValue.it_value = howMuchTimeFromNow(expiration);
