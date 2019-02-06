@@ -9,6 +9,8 @@
 #include "CurrentThread.h"
 #include "Thread.h"
 #include "Channel.h"
+#include "InetAddr.h"
+#include "Acceptor.h"
 
 #include <sys/timerfd.h>
 #include <string.h>
@@ -81,31 +83,48 @@
 //     loop.runAfter(60, f1);
 //     //loop.loop();
 // }
-void f5() {
-    printf("f5\n");
+// void f5() {
+//     printf("f5\n");
+// }
+
+// miniws::EventLoop *thread_loop = nullptr;
+// void threadFunc5() {
+// 	printf("threadFunc(): pid = %d, tid = %d\n", getpid(), miniws::CurrentThread::tid());
+//     miniws::EventLoop loop;
+//     thread_loop = &loop;
+//     loop.loop();
+// 	printf("tf2 end\n");
+// }
+// void test5() {
+// 	printf("main(): pid = %d, tid = %d\n", getpid(), miniws::CurrentThread::tid());
+//     miniws::Thread thread(threadFunc5);
+//     thread.start();
+//     while (thread_loop == nullptr) {
+//     }
+//     thread_loop->runEvery(3, f5);
+//     while (1) {}
+// }
+	
+void newConnection(int sockfd, const miniws::InetAddr &peerAddr) {
+    printf("newConnection(): accepted a new connection from %s\n", peerAddr.getIPPort().c_str());
+    write(sockfd, "How are you?\n", 13);
+    close(sockfd);
 }
 
-miniws::EventLoop *thread_loop = nullptr;
-void threadFunc5() {
-	printf("threadFunc(): pid = %d, tid = %d\n", getpid(), miniws::CurrentThread::tid());
+void test6() {
+    printf("main(): pid = %d, tid = %d\n", getpid(), miniws::CurrentThread::tid());
+
+    miniws::InetAddr serverAddr("127.0.0.1", 9981);
     miniws::EventLoop loop;
-    thread_loop = &loop;
+
+    miniws::Acceptor acceptor(&loop, serverAddr);
+    acceptor.setNewConnCallback(newConnection);
+    acceptor.listen();
     loop.loop();
-	printf("tf2 end\n");
 }
-void test5() {
-	printf("main(): pid = %d, tid = %d\n", getpid(), miniws::CurrentThread::tid());
-    miniws::Thread thread(threadFunc5);
-    thread.start();
-    while (thread_loop == nullptr) {
-    }
-    thread_loop->runEvery(3, f5);
-    while (1) {}
-}
-	
 
 int main() {
-    test5();
+    test6();
 }
 
 
