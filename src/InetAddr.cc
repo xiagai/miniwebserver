@@ -14,6 +14,10 @@
 
 namespace miniws {
 
+InetAddr::InetAddr() {
+    memset(&m_addr, 0, sizeof(m_addr));
+}
+
 InetAddr::InetAddr(std::string ip, uint16_t port) {
     memset(&m_addr, 0, sizeof(m_addr));
     m_addr.sin_family = AF_INET;
@@ -26,7 +30,8 @@ InetAddr::InetAddr(std::string ip, uint16_t port) {
 
 InetAddr::InetAddr(sockaddr_in &addr)
     : m_addr(addr) {
-
+    memset(&m_addr, 0, sizeof(m_addr));
+    m_addr = addr;
 }
 
 InetAddr::~InetAddr() {}
@@ -51,6 +56,10 @@ std::string InetAddr::getIPPort() const {
 
 uint16_t InetAddr::getPort() const {
     return be16toh(m_addr.sin_port);
+}
+
+void InetAddr::setAddr(sockaddr_in &addr) {
+    m_addr = addr;
 }
 
 }

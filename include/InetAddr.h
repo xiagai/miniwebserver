@@ -14,6 +14,7 @@ namespace miniws {
 
 class InetAddr {
 public:
+    InetAddr();
     InetAddr(std::string ip, uint16_t port);
     explicit InetAddr(sockaddr_in &addr);
     ~InetAddr();
@@ -22,6 +23,7 @@ public:
     std::string getIPPort() const;
     u_int16_t getPort() const;
     const struct sockaddr_in *getAddr() const;
+    void setAddr(sockaddr_in &);
 
 public:
     const static int kPORTSTRLEN = 10;
