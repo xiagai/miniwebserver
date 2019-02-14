@@ -22,11 +22,13 @@ public:
 	typedef std::function<void()> EventCallback;
 
 	Channel(EventLoop *loop, int fd);
+	~Channel();
 
 	void handleEvent();
 	void setReadCallback(const EventCallback& cb);
 	void setWriteCallback(const EventCallback& cb);
 	void setErrorCallback(const EventCallback& cb);
+	void setCloseCallback(const EventCallback& cb);
 
 	int fd() const;
 	int events() const;
@@ -58,10 +60,12 @@ private:
 	int m_events;
 	int m_revents;
 	int m_index;
+	bool m_eventHandling;
 
 	EventCallback m_readCallback;
 	EventCallback m_writeCallback;
 	EventCallback m_errorCallback;
+	EventCallback m_closeCallback;
 };
 
 }

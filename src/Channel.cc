@@ -9,6 +9,8 @@
 #include "Channel.h"
 #include "EventLoop.h"
 
+#include <assert.h>
+
 namespace miniws {
 
 Channel::Channel(EventLoop *loop, int fd)
@@ -16,12 +18,23 @@ Channel::Channel(EventLoop *loop, int fd)
 	  m_fd(fd),
 	  m_events(0),
 	  m_revents(0),
-	  m_index(-1) {
+	  m_index(-1),
+	  m_eventHandling(false) {
 
 }
+Channel::~Channel() {
+	assert(!m_eventHandling);
+}
 void Channel::handleEvent() {
+	m_eventHandling = true;
 	if (m_revents & POLLNVAL) {
 		printf("LOG_WARN Channel::handleEvent() POLLNVAL\n");
+	}
+	if ((m_revents & POLLHUP) && !(m_revents & POLLIN)) {
+		printf("LOG_WARN Channel::handleEvent() POLLHUP\n");
+		if (m_closeCallback) {
+			m_closeCallback();
+		}
 	}
 	if (m_revents & (POLLERR | POLLNVAL)) {
 		if (m_errorCallback) {
@@ -38,6 +51,7 @@ void Channel::handleEvent() {
 			m_writeCallback();
 		}
 	}
+	m_eventHandling = false;
 }
 void Channel::setReadCallback(const EventCallback& cb) {
 	m_readCallback = cb;
@@ -47,6 +61,9 @@ void Channel::setWriteCallback(const EventCallback& cb) {
 }
 void Channel::setErrorCallback(const EventCallback& cb) {
 	m_errorCallback = cb;
+}
+void Channel::setCloseCallback(const EventCallback& cb) {
+	m_closeCallback = cb;
 }
 int Channel::fd() const {
 	return m_fd;
