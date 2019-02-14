@@ -6,8 +6,13 @@
  */
 #pragma once
 
+#include <memory>
+
 namespace miniws {
 
-const static int SOMAXCONN = 5;
+class TcpConnection;
+
+typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
+
 
 }
