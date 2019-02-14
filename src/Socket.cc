@@ -69,4 +69,16 @@ int Socket::acceptConn(InetAddr &peerAddr) {
     return connfd;
 }
 
+int Socket::getSocketError() {
+    int optval;
+    socklen_t optlen = static_cast<socklen_t>(sizeof(sockaddr));
+
+    if (getsockopt(m_socketfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0) {
+        return errno;
+    }
+    else {
+        return optval;
+    }
+}
+
 }

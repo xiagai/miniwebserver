@@ -21,6 +21,8 @@ public:
     void listenConn();
     int acceptConn(InetAddr &peerAddr);
 
+    int getSocketError();
+
 private:
     const int m_socketfd;
 };
