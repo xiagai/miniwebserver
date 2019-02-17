@@ -22,10 +22,10 @@ TimeStamp Poller::poll(int timeoutMs, std::vector<Channel *> &activeChannels) {
 	int numEvents = ::poll(&(*m_pollfds.begin()), m_pollfds.size(), timeoutMs);
 	TimeStamp now(TimeStamp::now());
 	if (numEvents > 0) {
-		printf("LOG_TRACE %d events happened\n", numEvents);
+		printf("LOG_TRACE %p %d events happened\n", m_ownerLoop, numEvents);
 		fillActiveChannels(numEvents, activeChannels);
 	} else if (numEvents == 0) {
-		printf("LOG_TRACE nothing happened\n");
+		printf("LOG_TRACE %p nothing happened\n", m_ownerLoop);
 	} else {
 		printf("LOG_SYSERR Poller::poll()\n");
 	}
@@ -34,7 +34,7 @@ TimeStamp Poller::poll(int timeoutMs, std::vector<Channel *> &activeChannels) {
 
 void Poller::updateChannel(Channel *channel) {
 	assertInLoopThread();
-	printf("LOG_TRACE fd = %d events = %d\n", channel->fd(), channel->events());
+	printf("LOG_TRACE %p fd = %d events = %d\n", m_ownerLoop, channel->fd(), channel->events());
 	if (channel->index() < 0) {
 		// a new channel, add to m_pollfds
 		assert(m_channels.find(channel->fd()) == m_channels.end());
