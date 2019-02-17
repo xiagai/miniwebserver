@@ -14,6 +14,7 @@ namespace miniws {
 class Socket : noncopyable {
 public:
     Socket();
+    Socket(int sockfd);
     ~Socket();
 
     int getSocketfd() const;

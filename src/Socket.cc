@@ -33,6 +33,10 @@ Socket::Socket()
     : m_socketfd(detail::createSocketfd()) {
 }
 
+Socket::Socket(int sockfd)
+    : m_socketfd(sockfd) {
+}
+
 Socket::~Socket() {
     close(m_socketfd);
 }
