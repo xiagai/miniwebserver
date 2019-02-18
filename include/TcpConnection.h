@@ -30,12 +30,14 @@ public:
                   const InetAddr &peerAddr);
     ~TcpConnection();
     std::string getName();
+    EventLoop *getLoop();
+
     void setConnectionCallback(const ConnectionCallback &cb);
     void setMessageCallback(const MessageCallback &cb);
     void setCloseCallback(const CloseCallback &cb);
     void connectEstablished();
     void connectDestroyed();
-    EventLoop *getLoop();
+    void send(const char *buf, ssize_t len);
 
 private:
     enum StateE { kConnecting, kConnected, kDisconnected, };

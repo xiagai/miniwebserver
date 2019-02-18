@@ -9,6 +9,7 @@
 
 #include <unistd.h>
 #include <assert.h>
+#include <string.h>
 
 namespace miniws {
 
@@ -70,14 +71,49 @@ void TcpConnection::connectDestroyed() {
     m_loop->removeChannel(&m_channel);
 }
 
+void TcpConnection::send(const char *buf, ssize_t len) {
+    m_loop->assertInLoopThread();
+    assert(len != 0);
+    ssize_t n = ::send(m_channel.fd(), buf, len, 0);
+    if (n < 0) {
+        int error = errno;
+        switch(error) {
+            case EAGAIN:
+            case EBADF:
+            case EDESTADDRREQ:
+            case EFAULT:
+            case EFBIG:
+            case ENOSPC:
+            case EPERM:
+            case EPIPE:
+            case EINVAL:
+            case EDQUOT:
+            case EINTR:
+            case EIO:
+            default:
+                char strerr[64];
+                printf("LOG_DEBUG TcpConnection::send %s\n", strerror_r(errno, strerr, sizeof strerr));
+        }
+        //FIX ME hanle error
+    }
+    else if (n == len) {
+        printf("LOG_TRACE TcpConnection::send %d bytes.\n");
+    }
+    else {
+        assert(n < len);
+        printf("LOG_WARN TcpConnection::send disk device was filled.\n");
+    }
+}
+
 void TcpConnection::setState(StateE s) {
     m_state = s;
 }
 
 void TcpConnection::handleRead() {
     char buf[65536];
-    ssize_t n = read(m_channel.fd(), buf, sizeof buf);
+    ssize_t n = ::recv(m_channel.fd(), buf, sizeof buf, 0);
     if (n > 0) {
+        //FIX ME n == 65536 buf cannot contain
         m_messageCb(shared_from_this(), buf, n);
     }
     else if (n == 0) {
@@ -87,7 +123,9 @@ void TcpConnection::handleRead() {
         handleError();
     }
 }
+
 void TcpConnection::handleWrite() {}
+
 void TcpConnection::handleClose() {
     m_loop->assertInLoopThread();
     printf("LOG_TRACE TcpConnection::handleClose state = %d\n", m_state);
@@ -95,8 +133,10 @@ void TcpConnection::handleClose() {
     m_channel.disableAll();
     m_closeCb(shared_from_this());
 }
+
 void TcpConnection::handleError() {
     int err = m_socket.getSocketError();
     printf("LOG_ERROR TcpConnection::handleError() %d\n", err);
 }
+
 }
