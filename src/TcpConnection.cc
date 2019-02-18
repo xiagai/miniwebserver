@@ -53,6 +53,14 @@ void TcpConnection::setCloseCallback(const CloseCallback &cb) {
     m_closeCb = cb;
 }
 
+void TcpConnection::setTcpNoDelay(bool on) {
+    m_socket.setTcpNoDelay(on);
+}
+
+void TcpConnection::setTcpKeepAlive(bool on) {
+    m_socket.setTcpKeepAlive(on);
+}
+
 void TcpConnection::connectEstablished() {
     m_loop->assertInLoopThread();
     assert(m_state == kConnecting);
@@ -74,7 +82,7 @@ void TcpConnection::connectDestroyed() {
 void TcpConnection::send(const char *buf, ssize_t len) {
     m_loop->assertInLoopThread();
     assert(len != 0);
-    ssize_t n = ::send(m_channel.fd(), buf, len, 0);
+    ssize_t n = ::send(m_channel.fd(), buf, len, MSG_NOSIGNAL);
     if (n < 0) {
         int error = errno;
         switch(error) {

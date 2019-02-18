@@ -12,6 +12,7 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <unistd.h>
+#include <netinet/tcp.h>
 #include <iostream>
 #include <string.h>
 
@@ -45,6 +46,28 @@ int Socket::getSocketfd() const {
     return m_socketfd;
 }
 
+int Socket::getSocketError() {
+    int optval;
+    socklen_t optlen = static_cast<socklen_t>(sizeof(sockaddr));
+
+    if (getsockopt(m_socketfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0) {
+        return errno;
+    }
+    else {
+        return optval;
+    }
+}
+
+void Socket::setTcpNoDelay(bool on) {
+    int optval = on ? 1 : 0;
+    ::setsockopt(m_socketfd, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof optval);
+}
+
+void Socket::setTcpKeepAlive(bool on) {
+    int optval = on ? 1 : 0;
+    ::setsockopt(m_socketfd, IPPROTO_TCP, SO_KEEPALIVE, &optval, sizeof optval);
+}
+
 void Socket::bindAddr(const InetAddr &addr) {
     socklen_t addrlen = static_cast<socklen_t>(sizeof(sockaddr));
     int ret = bind(m_socketfd, (sockaddr *)addr.getAddr(), addrlen);
@@ -71,18 +94,6 @@ int Socket::acceptConn(InetAddr &peerAddr) {
     peerAddr.setAddr(addr);
     //FIXME errno switch
     return connfd;
-}
-
-int Socket::getSocketError() {
-    int optval;
-    socklen_t optlen = static_cast<socklen_t>(sizeof(sockaddr));
-
-    if (getsockopt(m_socketfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0) {
-        return errno;
-    }
-    else {
-        return optval;
-    }
 }
 
 }

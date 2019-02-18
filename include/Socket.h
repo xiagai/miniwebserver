@@ -18,11 +18,12 @@ public:
     ~Socket();
 
     int getSocketfd() const;
+    int getSocketError();
+    void setTcpNoDelay(bool on);
+    void setTcpKeepAlive(bool on);
     void bindAddr(const InetAddr &addr);
     void listenConn();
     int acceptConn(InetAddr &peerAddr);
-
-    int getSocketError();
 
 private:
     const int m_socketfd;

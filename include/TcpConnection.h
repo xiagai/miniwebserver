@@ -35,6 +35,8 @@ public:
     void setConnectionCallback(const ConnectionCallback &cb);
     void setMessageCallback(const MessageCallback &cb);
     void setCloseCallback(const CloseCallback &cb);
+    void setTcpNoDelay(bool on);
+    void setTcpKeepAlive(bool on);
     void connectEstablished();
     void connectDestroyed();
     void send(const char *buf, ssize_t len);
