@@ -57,8 +57,8 @@ private:
 
 	EventLoop *m_ownerLoop;
 	const int m_fd;
-	int m_events;
-	int m_revents;
+	uint32_t m_events;
+	uint32_t m_revents;
 	int m_index;
 	bool m_eventHandling;
 

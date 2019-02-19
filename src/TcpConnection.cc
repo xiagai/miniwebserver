@@ -75,8 +75,7 @@ void TcpConnection::connectDestroyed() {
     setState(kDisconnected);
     m_channel.disableAll();
     m_connectionCb(shared_from_this());
-    //FIX ME smart pointer channel
-    m_loop->removeChannel(&m_channel);
+    m_channel.remove();
 }
 
 void TcpConnection::send(const char *buf, ssize_t len) {

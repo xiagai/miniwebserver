@@ -132,7 +132,7 @@ void messageCb(miniws::TcpConnectionPtr conn, const char *buf, ssize_t buflen) {
 }
 
 void test7() {
-    miniws::InetAddr localAddr("127.0.0.1", 9981);
+    miniws::InetAddr localAddr("127.0.0.1", 9983);
     miniws::EventLoop baseLoop;
     miniws::TcpServer tcpServer(&baseLoop, "testServer", 4, localAddr);
     tcpServer.setConnectionCallback(connCb);

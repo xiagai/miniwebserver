@@ -17,4 +17,6 @@ typedef std::function<void (const TcpConnectionPtr &)> ConnectionCallback;
 typedef std::function<void (const TcpConnectionPtr &, const char *buf, ssize_t len)> MessageCallback;
 typedef std::function<void (const TcpConnectionPtr &)> CloseCallback;
 
+const static int MAX_EVENT_NUM = 65536;
+
 }

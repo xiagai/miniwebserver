@@ -21,7 +21,7 @@
 namespace miniws {
 
 class Channel;
-class Poller;
+class Epoller;
 
 class EventLoop : noncopyable {
 public:
@@ -53,7 +53,7 @@ private:
 	bool m_looping;
 	bool m_quit;
 	const pid_t m_threadId;
-	std::unique_ptr<Poller> m_poller;
+	std::unique_ptr<Epoller> m_poller;
 	std::unique_ptr<TimerQueue> m_timerQueue;
 	std::vector<Channel *> m_activeChannels;
 
