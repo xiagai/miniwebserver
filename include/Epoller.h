@@ -22,7 +22,7 @@ class Channel;
 
 class Epoller : noncopyable {
 public:
-    Epoller(EventLoop *ownerLoop, bool enableET = true);
+    Epoller(EventLoop *ownerLoop);
     ~Epoller();
     
 	/// EPolls the I/O events
@@ -37,17 +37,14 @@ public:
   	/// Must be called in the loop thread.
 	void removeChannel(Channel *channel);
 
-	bool isEt() const;
-
 private:
     void fillActiveChannels(int numEvents, epoll_event *revents, std::vector<Channel *> &activeChannels) const;
 
 private:
     EventLoop *m_ownerLoop;
     int m_epollfd;
-	bool m_enableET;
     std::map<int, Channel *> m_channels;
-	
+
 };
 
 }

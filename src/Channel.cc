@@ -10,12 +10,15 @@
 #include "EventLoop.h"
 
 #include <assert.h>
+#include <sys/epoll.h>
 
 namespace miniws {
 
-Channel::Channel(EventLoop *loop, int fd)
+Channel::Channel(EventLoop *loop, int fd, bool readET = false, bool writeET = true)
 	: m_ownerLoop(loop),
 	  m_fd(fd),
+	  m_readET(readET),
+	  m_writeET(writeET),
 	  m_events(0),
 	  m_revents(0),
 	  m_index(-1),
@@ -79,10 +82,16 @@ bool Channel::isNoneEvent() const {
 }
 void Channel::enableReading() {
 	m_events |= kReadEvent;
+	if (isReadETMode()) {
+		m_events |= EPOLLET;
+	}
 	update();
 }
 void Channel::enableWriting() {
 	m_events |= kWriteEvent;
+	if (isWriteETMode()) {
+		m_events |= EPOLLET;
+	}
 	update();
 }
 void Channel::disableWriting() {
@@ -92,6 +101,12 @@ void Channel::disableWriting() {
 void Channel::disableAll() {
 	m_events = kNoneEvent;
 	update();
+}
+bool Channel::isReadETMode() const {
+	return m_readET;
+}
+bool Channel::isWriteETMode() const {
+	return m_writeET;
 }
 int Channel::index() {
 	return m_index;

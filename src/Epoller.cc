@@ -17,10 +17,9 @@
 
 namespace miniws {
 
-Epoller::Epoller(EventLoop *ownerLoop, bool enableET = true)
+Epoller::Epoller(EventLoop *ownerLoop)
     : m_ownerLoop(ownerLoop),
-      m_epollfd(::epoll_create1(EPOLL_CLOEXEC)),
-      m_enableET(enableET) {}
+      m_epollfd(::epoll_create1(EPOLL_CLOEXEC)) {}
 
 Epoller::~Epoller() {
     ::close(m_epollfd);
@@ -53,9 +52,6 @@ void Epoller::updateChannel(Channel *channel) {
     epoll_event event;
     event.data.fd = channel->fd();
     event.events = channel->events();
-    if (isEt()) {
-        event.events |= EPOLLET;
-    }
     int ret;
     if (m_channels.find(channel->fd()) != m_channels.end()) {
         ret = epoll_ctl(m_epollfd, EPOLL_CTL_MOD, channel->fd(), &event);
@@ -99,10 +95,6 @@ void Epoller::fillActiveChannels(int numEvents, epoll_event *revents, std::vecto
         channel->setRevents(revents[i].events);
         activeChannels.push_back(channel);
     }
-}
-
-bool Epoller::isEt() const {
-    return m_enableET;
 }
 
 }

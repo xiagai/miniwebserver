@@ -21,7 +21,7 @@ class Channel : noncopyable {
 public:
 	typedef std::function<void()> EventCallback;
 
-	Channel(EventLoop *loop, int fd);
+	Channel(EventLoop *loop, int fd, bool readET = false, bool writeET = true);
 	~Channel();
 
 	void handleEvent();
@@ -41,6 +41,10 @@ public:
 	void disableAll();
 	void remove();
 
+	// for ET mode
+	bool isReadETMode() const;
+	bool isWriteETMode() const;
+
 	// for Poller
 	int index();
 	void setIndex(int idx);
@@ -57,6 +61,8 @@ private:
 
 	EventLoop *m_ownerLoop;
 	const int m_fd;
+	bool m_readET;
+	bool m_writeET;
 	uint32_t m_events;
 	uint32_t m_revents;
 	int m_index;
