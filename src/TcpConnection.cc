@@ -18,9 +18,10 @@ TcpConnection::TcpConnection(EventLoop *loop, const std::string &name, int sockf
       m_name(name),
       m_state(kConnecting),
       m_socket(sockfd),
-      m_channel(loop, sockfd),
+      m_channel(loop, sockfd, true),
       m_localAddr(localAddr),
-      m_peerAddr(peerAddr) {
+      m_peerAddr(peerAddr),
+      m_readBuf(READ_BUFFER_SIZE) {
     m_channel.setReadCallback(std::bind(&TcpConnection::handleRead, this));
     m_channel.setWriteCallback(std::bind(&TcpConnection::handleWrite, this));
     m_channel.setCloseCallback(std::bind(&TcpConnection::handleClose, this));
@@ -117,17 +118,33 @@ void TcpConnection::setState(StateE s) {
 }
 
 void TcpConnection::handleRead() {
-    char buf[65536];
-    ssize_t n = ::recv(m_channel.fd(), buf, sizeof buf, 0);
-    if (n > 0) {
-        //FIX ME n == 65536 buf cannot contain
-        m_messageCb(shared_from_this(), buf, n);
-    }
-    else if (n == 0) {
-        handleClose();
-    }
-    else {
-        handleError();
+    m_loop->assertInLoopThread();
+    if (m_channel.isReadETMode()) {
+        while (true) {
+            //FIXME 有没有其他优雅的方式实现
+            char *buf = new char[m_readBuf.remainingSize()];
+            ssize_t n = ::recv(m_channel.fd(), buf, m_readBuf.remainingSize(), 0);
+            if (n > 0) {
+                m_readBuf.putIn(buf, static_cast<size_t>(n));
+                if (m_readBuf.isFull()) {
+                    //handle read buf
+                    m_messageCb(shared_from_this(), m_readBuf);
+                }
+            }
+            else if (n == 0 || (n < 0 && errno == EAGAIN)) {
+                //handle read buf
+                m_messageCb(shared_from_this(), m_readBuf);
+                delete[] buf;
+                handleClose();
+                break;
+            }
+            else {
+                delete[] buf;
+                handleError();
+                break;
+            }
+            delete[] buf;
+        }
     }
 }
 
@@ -142,6 +159,7 @@ void TcpConnection::handleClose() {
 }
 
 void TcpConnection::handleError() {
+    m_loop->assertInLoopThread();
     int err = m_socket.getSocketError();
     printf("LOG_ERROR TcpConnection::handleError() %d\n", err);
 }
