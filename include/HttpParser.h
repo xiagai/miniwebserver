@@ -8,10 +8,18 @@
 #pragma once
 
 #include "noncopyable.h"
+#include "Buffer.h"
 
 #include <sys/stat.h>
+#include <sys/socket.h>
+#include <string>
 
 namespace miniws {
+
+struct httpret {
+    struct iovec *iov = nullptr;
+    size_t iovlen = 0;
+};
 
 class HttpParser : noncopyable {
 public:
@@ -54,39 +62,70 @@ public:
     };
 
 public:
-    HttpParser(char *readBuf);
+    HttpParser(Buffer &readBuf);
     ~HttpParser();
 
+    struct httpret process();
     HTTP_CODE processRead();
+    bool processWrite(HTTP_CODE);
 
 private:
     // used by read
     LINE_STATUS parseLine();
-    char *getLine();
-    HTTP_CODE parseRequestLine(char *text);
-    HTTP_CODE parseHeaders(char *text);
-    HTTP_CODE parseContent(char *text);
+    HTTP_CODE parseRequestLine();
+    HTTP_CODE parseHeaders();
+    HTTP_CODE parseContent();
     HTTP_CODE doRequest();
 
     // used by write
+    bool addLine(const char *format, ...);
+    bool addStatusLine();
+    bool addHeaders();
+    void addResponse();
+    void addContent();
 
 private:
+    static const int WRITE_BUFFER_SIZE = 1024;
+    static const int FORM_MAX_SIZE = 256;
+    static const int ok_200 = 200;
+    static const int error_400 = 400;
+    static const int error_403 = 403;
+    static const int error_404 = 404;
+    static const int error_500 = 500;
+    static const char* ok_200_title;
+    static const char* error_400_title;
+    static const char* error_400_form;
+    static const char* error_403_title;
+    static const char* error_403_form;
+    static const char* error_404_title;
+    static const char* error_404_form;
+    static const char* error_500_title;
+    static const char* error_500_form;
+
     CHECK_STATE m_checkState;
     METHOD m_method;
 
-    char *m_readBuf;
-    int m_readIdx;
-    int m_checkedIdx;
-    int m_startLine;
+    Buffer &m_readBuf;
+    size_t m_readIdx;
+    size_t m_lineStart;
+    size_t m_lineEnd;
 
-    char *m_url;
-    char *m_version;
-    char *m_host;
+    std::string m_url;
+    std::string m_version;
+    std::string m_host;
     int m_contentLen;
     bool m_linger;
 
+    char *m_fileAddress;
     char m_readFile[FILENAME_LEN];
     struct stat m_fileStat;
+
+    char m_response[WRITE_BUFFER_SIZE];
+    size_t m_writeIdx;
+    struct iovec m_iov[2];
+    int m_status;
+    const char *m_title;
+    char m_form[FORM_MAX_SIZE];
 };
 
 }
