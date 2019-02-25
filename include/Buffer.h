@@ -8,6 +8,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 namespace miniws {
 
@@ -23,7 +24,11 @@ public:
     bool putIn(char *buf, size_t len);
     bool takeOut(size_t n);
     /// if i > m_size, return value is undefined;
-    char operator[](size_t i);
+    char &operator[](size_t i);
+    size_t findCRLF(size_t pos) const;
+    size_t findSpace(size_t l, size_t r) const;
+    size_t skipSpace(size_t pos) const;
+    std::string getStringPiece(size_t pos, size_t len) const;
 
 private:
     const size_t m_capacity;

@@ -15,7 +15,7 @@ Buffer::Buffer(size_t capacity)
     : m_capacity(capacity),
       m_size(0),
       m_start(0),
-      m_end(1),
+      m_end(0),
       m_buf(capacity, 0) {}
 
 Buffer::~Buffer() {};
@@ -57,8 +57,56 @@ bool Buffer::takeOut(size_t n) {
     return true;
 }
 
-char Buffer::operator[](size_t i) {
+char &Buffer::operator[](size_t i) {
     return m_buf[(m_start + i) % m_capacity];
+}
+
+size_t Buffer::findCRLF(size_t pos) const {
+    for (; ((m_start + pos + 1) % m_capacity) < m_end; ++pos) {
+        if (m_buf[(m_start + pos) % m_capacity] == '\r' && m_buf[(m_start + pos + 1) % m_capacity] == '\n') {
+            return pos;
+        }
+    }
+    return m_size;
+}
+
+size_t Buffer::findSpace(size_t l, size_t r) const {
+    if (l >= m_size || r >= m_size) {
+        return m_size;
+    }
+    for (; l < r; ++l) {
+        if (m_buf[(m_start + l) % m_capacity] == ' ' || m_buf[(m_start + l) % m_capacity] == '\t') {
+            return l;
+        }
+    }
+    return m_size;
+}
+
+size_t Buffer::skipSpace(size_t pos) const {
+    if (pos >= m_size) {
+        return m_size;
+    }
+    while ((m_start + pos) % m_capacity < m_end) {
+        if (!(m_buf[(m_start + pos) % m_capacity] == ' ' || m_buf[(m_start + pos) % m_capacity] == '\t')) {
+            return pos;
+        }
+        pos++;
+    }
+    return m_size;
+}
+
+std::string Buffer::getStringPiece(size_t pos, size_t len) const {
+    if (((m_start + pos) % m_capacity + len - 1) >= m_end) {
+        return "";
+    }
+    if (((m_start + pos) % m_capacity + len) <= m_capacity) {
+        return std::string(m_buf.begin() + (m_start + pos) % m_capacity, m_buf.begin() + (m_start + pos) % m_capacity + len);
+    }
+    else {
+        std::string str1(m_buf.begin() + (m_start + pos) % m_capacity, m_buf.end());
+        std::string str2(m_buf.begin(), m_buf.begin() + (m_start + pos + len) % m_capacity);
+        return str1 + str2;
+    }
 }
 
 }
