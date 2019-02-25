@@ -42,7 +42,7 @@ bool Buffer::putIn(char *buf, size_t n) {
     }
     for (size_t i = 0; i < n; ++i) {
         m_buf[m_end % m_capacity] = buf[i];
-        ++m_end;
+        m_end = (m_end + 1) % m_capacity;
         ++m_size;
     }
     return true;
@@ -62,7 +62,7 @@ char &Buffer::operator[](size_t i) {
 }
 
 size_t Buffer::findCRLF(size_t pos) const {
-    for (; ((m_start + pos + 1) % m_capacity) < m_end; ++pos) {
+    for (; pos + 1 < m_size; ++pos) {
         if (m_buf[(m_start + pos) % m_capacity] == '\r' && m_buf[(m_start + pos + 1) % m_capacity] == '\n') {
             return pos;
         }
@@ -86,7 +86,7 @@ size_t Buffer::skipSpace(size_t pos) const {
     if (pos >= m_size) {
         return m_size;
     }
-    while ((m_start + pos) % m_capacity < m_end) {
+    while (pos < m_size) {
         if (!(m_buf[(m_start + pos) % m_capacity] == ' ' || m_buf[(m_start + pos) % m_capacity] == '\t')) {
             return pos;
         }
@@ -96,7 +96,7 @@ size_t Buffer::skipSpace(size_t pos) const {
 }
 
 std::string Buffer::getStringPiece(size_t pos, size_t len) const {
-    if (((m_start + pos) % m_capacity + len - 1) >= m_end) {
+    if (pos + len > m_size) {
         return "";
     }
     if (((m_start + pos) % m_capacity + len) <= m_capacity) {

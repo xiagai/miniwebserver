@@ -15,6 +15,7 @@
 #include "Common.h"
 #include "HttpParser.h"
 #include "TcpConnection.h"
+#include "HttpServer.h"
 
 #include <sys/timerfd.h>
 #include <string.h>
@@ -126,24 +127,13 @@
 //     acceptor.listen();
 //     loop.loop();
 // }
-void connCb(miniws::TcpConnectionPtr conn) {
-    printf("connCb\n");
-}
-void messageCb(miniws::TcpConnectionPtr conn, miniws::Buffer &buf) {
-    printf("messageCb\n");
-    miniws::HttpParser httpParser(buf);
-    miniws::httpret data = httpParser.process();
-    conn->sendv(data.iov, data.iovlen);
-}
 
 void test7() {
-    miniws::InetAddr localAddr("127.0.0.1", 9982);
-    miniws::EventLoop baseLoop;
-    miniws::TcpServer tcpServer(&baseLoop, "testServer", 4, localAddr);
-    tcpServer.setConnectionCallback(connCb);
-    tcpServer.setMessageCallback(messageCb);
-    tcpServer.start();
-    baseLoop.loop();
+    miniws::InetAddr localAddr("127.0.0.1", 9983);
+    std::string serverName = "testServer";
+    std::string homeDir = "./home";
+    miniws::HttpServer httpServer(serverName, localAddr, homeDir, 4);
+    httpServer.start();
 }
 
 int main() {
