@@ -21,6 +21,4 @@ typedef std::function<void (const TcpConnectionPtr &)> CloseCallback;
 
 static const int MAX_EVENT_NUM = 65536;
 
-static const char *home_dir = "./home";
-
 }
