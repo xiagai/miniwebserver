@@ -14,7 +14,7 @@
 
 namespace miniws {
 
-Channel::Channel(EventLoop *loop, int fd, bool readET = false, bool writeET = true)
+Channel::Channel(EventLoop *loop, int fd, bool readET, bool writeET)
 	: m_ownerLoop(loop),
 	  m_fd(fd),
 	  m_readET(readET),

@@ -13,6 +13,8 @@
 #include "Acceptor.h"
 #include "TcpServer.h"
 #include "Common.h"
+#include "HttpParser.h"
+#include "TcpConnection.h"
 
 #include <sys/timerfd.h>
 #include <string.h>
@@ -127,12 +129,15 @@
 void connCb(miniws::TcpConnectionPtr conn) {
     printf("connCb\n");
 }
-void messageCb(miniws::TcpConnectionPtr conn, const char *buf, ssize_t buflen) {
+void messageCb(miniws::TcpConnectionPtr conn, miniws::Buffer &buf) {
     printf("messageCb\n");
+    miniws::HttpParser httpParser(buf);
+    miniws::httpret data = httpParser.process();
+    conn->sendv(data.iov, data.iovlen);
 }
 
 void test7() {
-    miniws::InetAddr localAddr("127.0.0.1", 9983);
+    miniws::InetAddr localAddr("127.0.0.1", 9982);
     miniws::EventLoop baseLoop;
     miniws::TcpServer tcpServer(&baseLoop, "testServer", 4, localAddr);
     tcpServer.setConnectionCallback(connCb);
