@@ -7,16 +7,20 @@
 #pragma once
 
 #include <memory>
+#include <functional>
 
 namespace miniws {
 
 class TcpConnection;
+class Buffer;
 
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
 typedef std::function<void (const TcpConnectionPtr &)> ConnectionCallback;
-typedef std::function<void (const TcpConnectionPtr &, const char *buf, ssize_t len)> MessageCallback;
+typedef std::function<void (const TcpConnectionPtr &, Buffer &buf)> MessageCallback;
 typedef std::function<void (const TcpConnectionPtr &)> CloseCallback;
 
-const static int MAX_EVENT_NUM = 65536;
+static const int MAX_EVENT_NUM = 65536;
+
+static const char *home_dir = "./home";
 
 }

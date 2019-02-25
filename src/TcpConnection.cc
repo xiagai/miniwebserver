@@ -79,37 +79,15 @@ void TcpConnection::connectDestroyed() {
     m_channel.remove();
 }
 
-void TcpConnection::send(const char *buf, ssize_t len) {
+void TcpConnection::sendv(struct iovec* iov, size_t iovlen) {
     m_loop->assertInLoopThread();
-    assert(len != 0);
-    ssize_t n = ::send(m_channel.fd(), buf, len, MSG_NOSIGNAL);
+    struct msghdr msg = {};
+    msg.msg_iov = iov;
+    msg.msg_iovlen = iovlen;
+    ssize_t n = ::sendmsg(m_socket.getSocketfd(), &msg, MSG_NOSIGNAL);
     if (n < 0) {
-        int error = errno;
-        switch(error) {
-            case EAGAIN:
-            case EBADF:
-            case EDESTADDRREQ:
-            case EFAULT:
-            case EFBIG:
-            case ENOSPC:
-            case EPERM:
-            case EPIPE:
-            case EINVAL:
-            case EDQUOT:
-            case EINTR:
-            case EIO:
-            default:
-                char strerr[64];
-                printf("LOG_DEBUG TcpConnection::send %s\n", strerror_r(errno, strerr, sizeof strerr));
-        }
-        //FIX ME hanle error
-    }
-    else if (n == len) {
-        printf("LOG_TRACE TcpConnection::send %d bytes.\n");
-    }
-    else {
-        assert(n < len);
-        printf("LOG_WARN TcpConnection::send disk device was filled.\n");
+        char strerr[64];
+		printf("LOG_ERR TcpConnection::sendv %s\n", strerror_r(errno, strerr, sizeof strerr));
     }
 }
 

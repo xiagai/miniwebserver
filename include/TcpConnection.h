@@ -40,7 +40,7 @@ public:
     void setTcpKeepAlive(bool on);
     void connectEstablished();
     void connectDestroyed();
-    void send(const char *buf, ssize_t len);
+    void sendv(struct iovec* iov, size_t iovlen);
 
 private:
     enum StateE { kConnecting, kConnected, kDisconnected, };
