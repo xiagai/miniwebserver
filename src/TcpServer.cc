@@ -12,14 +12,15 @@
 
 namespace miniws {
 
-TcpServer::TcpServer(EventLoop *loop, const std::string name, int numThreads, const InetAddr &localAddr)
+TcpServer::TcpServer(EventLoop *loop, const std::string name, int numThreads, const InetAddr &localAddr, double delayCloseSec)
     : m_loop(loop),
       m_name(name),
       m_eventLoopThreadPool(loop, numThreads),
       m_localAddr(localAddr),
       m_acceptor(loop, localAddr),
       m_started(false),
-      m_nextConnId(0) {
+      m_nextConnId(0),
+      m_delayCloseSec(delayCloseSec) {
     m_acceptor.setNewConnCallback(std::bind(&TcpServer::newConnection, this, std::placeholders::_1, std::placeholders::_2));
 }
 
@@ -57,19 +58,19 @@ void TcpServer::newConnection(int sockfd, const InetAddr &peerAddr) {
 
     printf("LOG_INFO TcpServer::newConnection [%s] - new connection [%s] from %s\n", 
         m_name.c_str(), connName.c_str(), peerAddr.getIPPort().c_str());
-    TcpConnectionPtr conn = std::make_shared<TcpConnection>(ioLoop, connName, sockfd, m_localAddr, peerAddr);
+    TcpConnectionPtr conn = std::make_shared<TcpConnection>(ioLoop, connName, sockfd, m_localAddr, peerAddr, m_delayCloseSec);
     m_connections[connName] = conn;
     conn->setConnectionCallback(m_connectionCb);
     conn->setMessageCallback(m_messageCb);
-    conn->setCloseCallback(std::bind(&TcpServer::removeConnection, this, conn));
+    conn->setCloseCallback(std::bind(&TcpServer::removeConnection, this, std::placeholders::_1));
     ioLoop->runInLoop(std::bind(&TcpConnection::connectEstablished, conn));
 }
 
-void TcpServer::removeConnection(const TcpConnectionPtr &conn) {
+void TcpServer::removeConnection(const TcpConnectionPtr conn) {
     m_loop->runInLoop(std::bind(&TcpServer::removeConnectionInLoop, this, conn));
 }
 
-void TcpServer::removeConnectionInLoop(const TcpConnectionPtr &conn) {
+void TcpServer::removeConnectionInLoop(const TcpConnectionPtr conn) {
     m_loop->assertInLoopThread();
     printf("LOG_INFO TcpServer::removeConnection\n");
     size_t n = m_connections.erase(conn->getName());

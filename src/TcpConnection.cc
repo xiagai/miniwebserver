@@ -13,7 +13,8 @@
 
 namespace miniws {
 
-TcpConnection::TcpConnection(EventLoop *loop, const std::string &name, int sockfd, const InetAddr &localAddr, const InetAddr &peerAddr)
+TcpConnection::TcpConnection(EventLoop *loop, const std::string &name, int sockfd, const InetAddr &localAddr,
+    const InetAddr &peerAddr, double delayCloseSec)
     : m_loop(loop),
       m_name(name),
       m_state(kConnecting),
@@ -21,7 +22,10 @@ TcpConnection::TcpConnection(EventLoop *loop, const std::string &name, int sockf
       m_channel(loop, sockfd, true),
       m_localAddr(localAddr),
       m_peerAddr(peerAddr),
-      m_readBuf(READ_BUFFER_SIZE) {
+      m_readBuf(READ_BUFFER_SIZE),
+      m_delayClose(false),
+      m_delayCloseSec(delayCloseSec),
+      m_delayTimerId(0) {
     m_channel.setReadCallback(std::bind(&TcpConnection::handleRead, this));
     m_channel.setWriteCallback(std::bind(&TcpConnection::handleWrite, this));
     m_channel.setCloseCallback(std::bind(&TcpConnection::handleClose, this));
@@ -113,7 +117,13 @@ void TcpConnection::handleRead() {
                 //handle read buf
                 m_messageCb(shared_from_this(), m_readBuf);
                 delete[] buf;
-                handleClose();
+                if (m_delayClose) {
+                    m_loop->cancelRun(m_delayTimerId);
+                    m_delayTimerId = m_loop->runAfter(m_delayCloseSec, std::bind(&TcpConnection::handleClose, shared_from_this()));
+                }
+                else {
+                    handleClose();
+                }
                 break;
             }
             else {
@@ -128,6 +138,13 @@ void TcpConnection::handleRead() {
 
 void TcpConnection::handleWrite() {}
 
+void TcpConnection::shutdown() {
+    if (m_delayTimerId != 0) {
+        m_loop->cancelRun(m_delayTimerId);
+    }
+    handleClose();
+}
+
 void TcpConnection::handleClose() {
     m_loop->assertInLoopThread();
     printf("LOG_TRACE TcpConnection::handleClose state = %d\n", m_state);
@@ -140,6 +157,10 @@ void TcpConnection::handleError() {
     m_loop->assertInLoopThread();
     int err = m_socket.getSocketError();
     printf("LOG_ERROR TcpConnection::handleError() %d\n", err);
+}
+
+void TcpConnection::setDelayClose(bool on) {
+    m_delayClose = on;
 }
 
 }

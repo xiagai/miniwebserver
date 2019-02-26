@@ -21,7 +21,7 @@ namespace miniws {
 
 class TcpServer : noncopyable {
 public:
-    TcpServer(EventLoop *loop, const std::string name, int numThreads, const InetAddr &localAddr);
+    TcpServer(EventLoop *loop, const std::string name, int numThreads, const InetAddr &localAddr, double delayCloseSec);
     ~TcpServer();
 
     void start();
@@ -34,8 +34,8 @@ public:
 private:
     /// Not thread safe, but in loop
     void newConnection(int sockfd, const InetAddr &peerAddr);
-    void removeConnection(const TcpConnectionPtr &conn);
-    void removeConnectionInLoop(const TcpConnectionPtr &conn);
+    void removeConnection(const TcpConnectionPtr conn);
+    void removeConnectionInLoop(const TcpConnectionPtr conn);
 
 private:
     typedef std::map<std::string, TcpConnectionPtr> ConnectionMap;
@@ -49,6 +49,7 @@ private:
     MessageCallback m_messageCb;
     bool m_started;
     int m_nextConnId;
+    double m_delayCloseSec;
     ConnectionMap m_connections;
 };
 

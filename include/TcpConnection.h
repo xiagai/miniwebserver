@@ -28,7 +28,8 @@ public:
                   const std::string &name,
                   int sockfd,
                   const InetAddr &localAddr,
-                  const InetAddr &peerAddr);
+                  const InetAddr &peerAddr,
+                  double delayCloseSec);
     ~TcpConnection();
     std::string getName();
     EventLoop *getLoop();
@@ -41,6 +42,7 @@ public:
     void connectEstablished();
     void connectDestroyed();
     void sendv(struct iovec* iov, size_t iovlen);
+    void setDelayClose(bool delayClose);
 
 private:
     enum StateE { kConnecting, kConnected, kDisconnected, };
@@ -51,7 +53,9 @@ private:
     void handleWrite();
     void handleClose();
     void handleError();
+    void shutdown();
 
+private:
     EventLoop *m_loop;
     std::string m_name;
     StateE m_state;
@@ -60,6 +64,9 @@ private:
     InetAddr m_localAddr;
     InetAddr m_peerAddr;
     Buffer m_readBuf;
+    bool m_delayClose;
+    double m_delayCloseSec;
+    TimerId m_delayTimerId;
     ConnectionCallback m_connectionCb;
     MessageCallback m_messageCb;
     CloseCallback m_closeCb;
