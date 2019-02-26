@@ -19,13 +19,11 @@ namespace miniws {
 struct httpret {
     struct iovec *iov = nullptr;
     size_t iovlen = 0;
+    bool keepAlive = false;
 };
 
 class HttpParser : noncopyable {
 public:
-    static const int FILENAME_LEN = 200;
-    //static const int WRITE_BUFFER_SIZE = 1024;
-
     enum METHOD {
         GET,
         POST,
@@ -62,7 +60,7 @@ public:
     };
 
 public:
-    HttpParser(Buffer &readBuf);
+    HttpParser(char *homeDir, Buffer &readBuf);
     ~HttpParser();
 
     struct httpret process();
@@ -85,6 +83,7 @@ private:
     void addContent();
 
 private:
+    static const int FILENAME_LEN = 200;
     static const int WRITE_BUFFER_SIZE = 1024;
     static const int FORM_MAX_SIZE = 256;
     static const int ok_200 = 200;
@@ -104,22 +103,27 @@ private:
 
     CHECK_STATE m_checkState;
     METHOD m_method;
+    char *m_homeDir;
 
+    //read buffer
     Buffer &m_readBuf;
     size_t m_readIdx;
     size_t m_lineStart;
     size_t m_lineEnd;
 
+    //request arguments
     std::string m_url;
     std::string m_version;
     std::string m_host;
     int m_contentLen;
     bool m_linger;
 
+    //file arguments
     char *m_fileAddress;
     char m_readFile[FILENAME_LEN];
     struct stat m_fileStat;
 
+    //response arguments
     char m_response[WRITE_BUFFER_SIZE];
     size_t m_writeIdx;
     struct iovec m_iov[2];

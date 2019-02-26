@@ -19,13 +19,13 @@ namespace miniws {
 
 class HttpServer : noncopyable {
 public:
-    HttpServer(std::string &serverName, InetAddr &localAddr, std::string &homeDir, int numThreads);
+    HttpServer(std::string &serverName, InetAddr &localAddr, std::string &homeDir, int numThreads, double delayCloseSec);
     ~HttpServer();
     void start();
     
 private:
-    void onConnection(const TcpConnectionPtr &conn);
-    void onMessage(const TcpConnectionPtr &conn, Buffer &buf);
+    void onConnection(const TcpConnectionPtr conn);
+    void onMessage(const TcpConnectionPtr conn, Buffer &buf);
 
 private:
     static const int MAX_HOME_SIZE = 100;
@@ -33,6 +33,7 @@ private:
     InetAddr m_localAddr;
     char m_homeDir[MAX_HOME_SIZE];
     int m_numThreads;
+    double m_delayCloseSec;
 };
 
 }

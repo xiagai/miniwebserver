@@ -48,7 +48,7 @@ void Epoller::updateChannel(Channel *channel) {
         removeChannel(channel);
         return;
     }
-    printf("LOG_TRACE Epoller::updateChannel %p fd = %d events = %d\n", m_ownerLoop, channel->fd(), channel->events());
+    printf("LOG_TRACE Epoller::updateChannel %p fd = %d events = %u\n", m_ownerLoop, channel->fd(), channel->events());
     epoll_event event;
     event.data.fd = channel->fd();
     event.events = channel->events();

@@ -15,9 +15,11 @@ class TcpConnection;
 class Buffer;
 
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
-typedef std::function<void (const TcpConnectionPtr &)> ConnectionCallback;
-typedef std::function<void (const TcpConnectionPtr &, Buffer &buf)> MessageCallback;
-typedef std::function<void (const TcpConnectionPtr &)> CloseCallback;
+typedef uint64_t TimerId;
+
+typedef std::function<void (const TcpConnectionPtr)> ConnectionCallback;
+typedef std::function<void (const TcpConnectionPtr, Buffer &buf)> MessageCallback;
+typedef std::function<void (const TcpConnectionPtr)> CloseCallback;
 
 static const int MAX_EVENT_NUM = 65536;
 

@@ -2,14 +2,20 @@
 
 namespace miniws {
 
-Timer::Timer(TimerCallback cb, TimeStamp expiration, double interval) 
-    : m_cb(cb),
+Timer::Timer(TimerId id, TimerCallback cb, TimeStamp expiration, double interval) 
+    : m_timerId(id),
+      m_cb(cb),
       m_expiration(expiration),
       m_interval(interval),
-      m_repeat(interval > 0.0) {}
+      m_repeat(interval > 0.0),
+      m_toCancel(false) {}
 
 void Timer::cb() {
     m_cb();
+}
+
+TimerId Timer::getTimerId() const {
+    return m_timerId;
 }
 
 TimeStamp Timer::getExpiration() {
@@ -31,6 +37,14 @@ void Timer::restart(TimeStamp now) {
     else {
         m_expiration = TimeStamp::invalid();
     }
+}
+
+bool Timer::toCancel() const {
+    return m_toCancel;
+}
+
+void Timer::setToCancel(bool on) {
+    m_toCancel = on;
 }
 
 }

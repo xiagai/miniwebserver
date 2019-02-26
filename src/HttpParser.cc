@@ -27,8 +27,9 @@ const char* HttpParser::error_404_form = "The requested file was not found on th
 const char* HttpParser::error_500_title = "Internal Error";
 const char* HttpParser::error_500_form = "There was an unusual problem serving the requested file.\n";
 
-HttpParser::HttpParser(Buffer &readBuf) 
-    : m_checkState(CHECK_STATE_REQUESTLINE),
+HttpParser::HttpParser(char *homeDir, Buffer &readBuf)
+    : m_homeDir(homeDir),
+      m_checkState(CHECK_STATE_REQUESTLINE),
       m_method(GET),
       m_readBuf(readBuf),
       m_readIdx(readBuf.size()),
@@ -56,6 +57,7 @@ struct httpret HttpParser::process() {
     if (processWrite(res)) {
         ret.iov = m_iov;
         ret.iovlen = 2;
+        ret.keepAlive = m_linger;
         return ret;
     }
     else {
@@ -122,9 +124,7 @@ bool HttpParser::processWrite(HTTP_CODE httpCode) {
         default:
             printf("SYS_DEBUG HttpParser::processWrite\n");
     }
-    bool ret1 = addStatusLine();
-    bool ret2 = addHeaders();
-    bool ret = ret1 && ret2;
+    bool ret = addStatusLine() && addHeaders();
     addResponse();
     addContent();
     return ret;
@@ -226,9 +226,9 @@ HttpParser::HTTP_CODE HttpParser::parseContent() {
 
 HttpParser::HTTP_CODE HttpParser::doRequest() {
     //将已解析的http报文移出缓冲区
-    m_readBuf.takeOut(m_lineEnd);
-    strncpy(m_readFile, home_dir, FILENAME_LEN);
-    int len = strlen(home_dir);
+    m_readBuf.takeOut(m_lineStart);
+    strncpy(m_readFile, m_homeDir, FILENAME_LEN);
+    int len = strlen(m_homeDir);
     strncpy(m_readFile + len, m_url.c_str(), FILENAME_LEN - len - 1);
     if (stat(m_readFile, &m_fileStat) < 0) {
         char strerr[64];

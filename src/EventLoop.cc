@@ -150,18 +150,22 @@ EventLoop *EventLoop::getEventLoopOfCurrentThread() {
 	return t_loopInThisThread;
 }
 
-void EventLoop::runAt(const TimeStamp &timestamp, const Timer::TimerCallback &cb) {
-	m_timerQueue->addTimer(cb, timestamp, 0.0);
+TimerId EventLoop::runAt(const TimeStamp &timestamp, const Timer::TimerCallback &cb) {
+	return m_timerQueue->addTimer(cb, timestamp, 0.0);
 }
 
-void EventLoop::runAfter(double delay, const Timer::TimerCallback &cb) {
+TimerId EventLoop::runAfter(double delay, const Timer::TimerCallback &cb) {
 	TimeStamp timestamp = TimeStamp::addTime(TimeStamp::now(), delay);
-	runAt(timestamp, cb);
+	return runAt(timestamp, cb);
 }
 
-void EventLoop::runEvery(double interval, const Timer::TimerCallback &cb) {
+TimerId EventLoop::runEvery(double interval, const Timer::TimerCallback &cb) {
 	TimeStamp timestamp = TimeStamp::addTime(TimeStamp::now(), interval);
-	m_timerQueue->addTimer(cb, timestamp, interval);
+	return m_timerQueue->addTimer(cb, timestamp, interval);
+}
+
+void EventLoop::cancelRun(TimerId timerId) {
+	m_timerQueue->cancelTimer(timerId);
 }
 
 void EventLoop::doPendingFunctors() {

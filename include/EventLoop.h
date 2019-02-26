@@ -39,9 +39,10 @@ public:
 	void removeChannel(Channel* channel);
 	void runInLoop(const Functor &cb);
 	static EventLoop *getEventLoopOfCurrentThread();
-	void runAt(const TimeStamp &timestamp, const Timer::TimerCallback &cb);
-	void runAfter(double delay, const Timer::TimerCallback &cb);
-	void runEvery(double interval, const Timer::TimerCallback &cb);
+	TimerId runAt(const TimeStamp &timestamp, const Timer::TimerCallback &cb);
+	TimerId runAfter(double delay, const Timer::TimerCallback &cb);
+	TimerId runEvery(double interval, const Timer::TimerCallback &cb);
+	void cancelRun(TimerId timerId);
 
 private:
 	void handleWakeUp();

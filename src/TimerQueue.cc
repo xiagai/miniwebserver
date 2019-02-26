@@ -53,11 +53,12 @@ void readTimerfd(int timerfd, TimeStamp now) {
 
 }
 
+std::atomic_uint64_t TimerQueue::s_sequence(1);
+
 TimerQueue::TimerQueue(EventLoop *eventloop) 
     : m_ownerLoop(eventloop),
       m_timerfd(detail::createTimerfd()), 
-      m_timerChannel(eventloop, m_timerfd),
-      m_timersMap() {
+      m_timerChannel(eventloop, m_timerfd) {
     m_timerChannel.setReadCallback(std::bind(&TimerQueue::handleRead, this));
     m_timerChannel.enableReading();
 }
@@ -68,21 +69,35 @@ TimerQueue::~TimerQueue() {
     close(m_timerfd);
 }
 
-void TimerQueue::addTimer(const Timer::TimerCallback &cb, TimeStamp when, double interval) {
-    std::unique_ptr<Timer> timer = std::make_unique<Timer>(cb, when, interval);
-    //  The problem is that std::function must be CopyConstructible, 
-    //  which requires its argument (which will be stored by the function) also be CopyConstructible.
-    //m_ownerLoop->runInLoop(std::bind(&TimerQueue::addTimerInLoop, this, std::move(timer)));
+TimerId TimerQueue::addTimer(const Timer::TimerCallback &cb, TimeStamp when, double interval) {
+    TimerId timerId = s_sequence++;
+    std::shared_ptr<Timer> timer = std::make_shared<Timer>(timerId, cb, when, interval);
+
     m_ownerLoop->runInLoop(EventLoop::Functor([&]() {
-        addTimerInLoop(timer);
+        addTimerInLoop(timerId, timer); 
+    }));
+    return timerId;
+}
+
+void TimerQueue::cancelTimer(TimerId timerId) {
+    m_ownerLoop->runInLoop(EventLoop::Functor([&]() {
+        cancelTimerInLoop(timerId); 
     }));
 }
 
-void TimerQueue::addTimerInLoop(std::unique_ptr<Timer> &timer) {
+void TimerQueue::addTimerInLoop(TimerId timerId, std::shared_ptr<Timer> timer) {
     m_ownerLoop->assertInLoopThread();
+    m_timersMap.insert(std::pair<TimerId, std::shared_ptr<Timer>>(timerId, timer));
     bool earliestChanged = insert(timer);
     if (earliestChanged) {
-        detail::resetTimerfd(m_timerfd, m_timersMap.cbegin()->second->getExpiration());
+        detail::resetTimerfd(m_timerfd, m_timersQueue.cbegin()->second->getExpiration());
+    }
+}
+
+void TimerQueue::cancelTimerInLoop(TimerId timerId) {
+    m_ownerLoop->assertInLoopThread();
+    if (m_timersMap.find(timerId) != m_timersMap.end()) {
+        m_timersMap[timerId]->setToCancel(true);
     }
 }
 
@@ -91,51 +106,56 @@ void TimerQueue::handleRead() {
     TimeStamp now = TimeStamp::now();
     detail::readTimerfd(m_timerfd, now);
 
-    std::vector<std::unique_ptr<Timer>> expired = getExpired(now);
+    std::vector<std::shared_ptr<Timer>> expired = getExpired(now);
 
     for (auto &each : expired) {
-        each->cb();
+        if (!each->toCancel()) {
+            each->cb();
+        }
     }
 
     reset(expired, now);
 }
 
-std::vector<std::unique_ptr<Timer>> TimerQueue::getExpired(TimeStamp now) {
-    std::vector<std::unique_ptr<Timer>> expired;
-    TimersMap::const_iterator end = m_timersMap.lower_bound(now);
-    assert(end == m_timersMap.end() || now < end->first);
-    for (auto it = m_timersMap.begin(); it != end; ++it) {
+std::vector<std::shared_ptr<Timer>> TimerQueue::getExpired(TimeStamp now) {
+    std::vector<std::shared_ptr<Timer>> expired;
+    TimersQueue::const_iterator end = m_timersQueue.lower_bound(now);
+    assert(end == m_timersQueue.end() || now < end->first);
+    for (auto it = m_timersQueue.begin(); it != end; ++it) {
         expired.push_back(std::move(it->second));
     }
-    m_timersMap.erase(m_timersMap.begin(), end);
+    m_timersQueue.erase(m_timersQueue.begin(), end);
     return expired;
 }
 
-void TimerQueue::reset(std::vector<std::unique_ptr<Timer>> &expired, TimeStamp now) {
-    for (std::unique_ptr<Timer> &each : expired) {
-        if (each->getRepeat()) {
+void TimerQueue::reset(std::vector<std::shared_ptr<Timer>> &expired, TimeStamp now) {
+    for (std::shared_ptr<Timer> &each : expired) {
+        if (!each->toCancel() && each->getRepeat()) {
             each->restart(now);
             insert(each);
         }
+        else {
+            m_timersMap.erase(each->getTimerId());
+        }
     }
     TimeStamp nextExpire;
-    if (!m_timersMap.empty()) {
-        nextExpire = m_timersMap.begin()->second->getExpiration();
+    if (!m_timersQueue.empty()) {
+        nextExpire = m_timersQueue.begin()->second->getExpiration();
     }
     if (nextExpire.isValid()) {
         detail::resetTimerfd(m_timerfd, nextExpire);
     }
 }
 
-bool TimerQueue::insert(std::unique_ptr<Timer> &timer) {
+bool TimerQueue::insert(std::shared_ptr<Timer> &timer) {
     m_ownerLoop->assertInLoopThread();
     bool earlistChanged = false;
     TimeStamp when = timer->getExpiration();
-    TimersMap::const_iterator it = m_timersMap.cbegin();
-    if (it == m_timersMap.cend() || when < it->first) {
+    TimersQueue::const_iterator it = m_timersQueue.cbegin();
+    if (it == m_timersQueue.cend() || when < it->first) {
         earlistChanged = true;
     }
-    m_timersMap.insert(std::pair<TimeStamp, std::unique_ptr<Timer>>(when, std::move(timer)));
+    m_timersQueue.insert(std::pair<TimeStamp, std::shared_ptr<Timer>>(when, std::move(timer)));
     return earlistChanged;
 }
 
